@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lookout CCTV System</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Poppins:wght@500;600&display=swap">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="static/css/main.css">
 </head>
 <body>
     <div class="container">
@@ -13,20 +13,20 @@
             <h2>Live Feed</h2>
             <img id="video-stream" 
                 src="/video_feed" 
-                alt="Camera Feed" 
-                onerror="this.onerror=null; this.src={{ url_for('static', filename='assets/images/no-image.gif') }}';">
-
+                alt="Camera Feed" >
         </div>
 
         <div class="controls">
             <h2>Controls</h2>
-            <input type="text" id="camera-url" placeholder="Enter camera URL or device">
-            <button onclick="connectCamera()">Connect</button>
+            <p>Input: Wifi IP:Port </p>
+            <input type="text" id="camera-url" placeholder="e.g. 1XX.1XX.X.X:4XX7">
+            <button onclick="connectCamera()">Connect Camera</button>
+            <button onclick="disconnectCamera()">Disconnect Camera</button>
             <button onclick="startDetection()">Start Detection</button>
             <button onclick="stopDetection()">Stop Detection</button>
         </div>
     </div>
-    <div class="output-box">
+    <div class="output-box">    
     <textarea id="output" readonly placeholder="System messages will appear here..."></textarea>
     </div>
 
@@ -34,7 +34,7 @@
     
     <script>
         function connectCamera() {
-            writeOutput("Button pressed")
+            writeOutput("Connecting Camera...")
             let  url = document.getElementById('camera-url').value;
             url = "http://" + url + "/video";
             fetch(`/connect_camera?url=${encodeURIComponent(url)}`)
@@ -44,22 +44,37 @@
         }
 
         function startDetection() {
+            writeOutput("Starting Detection...")
             fetch('/start_detection')
                 .then(res => res.json())
-                .then(data => alert(data.message));
-            writeOutput("Starting Detection...")
+                .then(data => writeOutput(data.message));
         }
 
         function stopDetection() {
+            writeOutput("Stopping Detection...")
             fetch('/stop_detection')
                 .then(res => res.json())
-                .then(data => alert(data.message));
-            writeOutput("Stop Detection...")
+                .then(data => writeOutput(data.message));
         }
+
+        function disconnectCamera() {
+            writeOutput("Disconnecting Camera...")
+            fetch('/disconnect_camera')
+                .then(res => res.json())
+                .then(data => writeOutput(data.message));
+        }
+        function updateDetectionStatus() {
+            fetch("/detection_status")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.detected){ writeOutput("Person Detected")}
+                })
+        }
+        // Update every 500ms
+        setInterval(updateDetectionStatus, 2000);
+
         function writeOutput(message) {
             const output = document.getElementById('output');   
-
-            
             if (output.value === "") {
                 lines = []
             } else{
@@ -84,6 +99,7 @@
             output.value = lines.join("\n");
             output.scrollTop = 0;
         }
+        
 
     </script>
 </body>
