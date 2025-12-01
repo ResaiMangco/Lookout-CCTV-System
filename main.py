@@ -1,135 +1,165 @@
-from flask import Flask, Response, request, jsonify, render_template
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.templating import Jinja2Templates
 import cv2
-from threading import Thread
-from sympy import false, true
 from ultralytics import YOLO
-import webbrowser
-import threading
+from threading import Thread
+import asyncio
+import threading, webbrowser
+import numpy as np
+
+import re
 
 
-app = Flask(__name__)
+
+
+app = FastAPI()
+
+# Mount static folder
+app.mount("/static", StaticFiles(directory="static"), name="static")
+#templates = Jinja2Templates(directory="templates")
 
 # Global variables
 camera = None
 camera_url = None
 detecting = False
 detected = False
-model = YOLO("assets/best.pt")
-signal_counter = 0
-signal_send = 4
-
 output_frame = None
+frame_count = 0
+skip_frame = 4
 
-def open_browser():
-    print("Opening Browser")
-    webbrowser.open_new("http://127.0.0.1:5000")
+model = YOLO("static/assets/best.pt")  # YOLO model
+
+import threading
+camera_lock = threading.Lock()
 
 # ---------------------------
 # Video capture thread
 # ---------------------------
 def capture_frames():
-    global camera, output_frame, detecting, detected, signal_counter
+    global camera, output_frame, detecting, detected
+    default_image = cv2.imread("static/assets/images/no-image.jpg")
+    default_image = cv2.resize(default_image, (640, 480))
+
     while True:
-        if camera is not None:
-            ret, frame = camera.read()
-            if not ret:
-                continue
+        with camera_lock:
+            if camera is not None and camera.isOpened():
+                try:
+                    ret, frame = camera.read()
+                    if not ret:
+                        output_frame = cv2.imencode(".jpg", default_image)[1].tobytes()
+                        continue
 
-            # Run YOLO detection if enabled
-            if detecting:                
-                results = model(frame)[0]
-                
-                if len(results.boxes) > 0:
-                    detected = True                        
-                else:
-                    detected = False
-                    
-                for box in results.boxes.xyxy:  # xyxy boxes
-                    x1, y1, x2, y2 = map(int, box)
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                    cv2.putText(frame, "Person", (x1, y1-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+                    # YOLO detection
+                    if detecting:
+                        results = model(frame)[0]
+                        detected = len(results.boxes) > 0
+                        for box in results.boxes.xyxy:
+                            x1, y1, x2, y2 = map(int, box)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                            cv2.putText(frame, "Person", (x1, y1-10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
 
-            # Store frame
-            ret, jpeg = cv2.imencode('.jpg', frame)
-            output_frame = jpeg.tobytes()
+                    output_frame = cv2.imencode(".jpg", frame)[1].tobytes()
+                except:
+                    output_frame = cv2.imencode(".jpg", default_image)[1].tobytes()
+                    camera.release()
+                    camera = None    
+            else:
+                # No camera → show default image
+                output_frame = cv2.imencode(".jpg", default_image)[1].tobytes()
 
-# Start capture thread
+
+# Start thread
 thread = Thread(target=capture_frames)
 thread.daemon = True
 thread.start()
 
-# ---------------------------
-# Flask routes
-# ---------------------------
-@app.route('/')
-def index():
-    return render_template('index.html')
+#threading.Timer(1, open_browser).start()
 
-@app.route('/connect_camera')
-def connect_camera():
+
+def open_browser():
+    webbrowser.open_new("http://127.0.0.1:5000")
+
+def validate_camera_url(url: str) -> bool:
+    pattern = r'^(http|rtsp)://\d{1,3}(\.\d{1,3}){3}(:\d+)?(/.*)?$'
+    print("Check url")
+    return re.match(pattern, url) is not None
+
+# ---------------------------
+# Routes
+# ---------------------------
+@app.get("/")
+async def index(request: Request):
+    #return templates.TemplateResponse("index.html", {"request": request})
+    return FileResponse("index.html")
+
+@app.get("/connect_camera")
+async def connect_camera(url: str):
     global camera, camera_url
-    camera_url = request.args.get('url')
-    print(camera_url)
-    if camera is None:
-        try:
-            camera = cv2.VideoCapture(camera_url)
-            if camera.isOpened():
-                return jsonify({"message": "Camera connected successfully!"})
-            else:
-                camera = None
-                return jsonify({"message": "Failed to open camera!"})
-        except Exception as e:
-            return jsonify({"message": str(e)})
-    else:
-        return jsonify({"message": "Camera already connected!"})
+    with camera_lock:
+        if camera is not None:
+            camera.release()
+            camera = None
+        
+        if not validate_camera_url(url):
+            return JSONResponse({"message": "Invalid camera URL!"})
+        
+        camera_url = url
+        
+        camera = cv2.VideoCapture(camera_url)
+        if camera.isOpened():
+            return JSONResponse({"message": "Camera connected successfully!"})
+        else:
+            camera.release()
+            camera = None
+            return JSONResponse({"message": "Failed to open camera!"})
 
-@app.route('/start_detection')
-def start_detection():
-    global detecting, camera
+@app.get("/disconnect_camera")
+async def disconnect_camera():
+    global camera
+    with camera_lock:
+        if camera is not None:
+            camera.release()
+            camera = None
+            return JSONResponse({"message": "Camera disconnected!"})
+        else:
+            return JSONResponse({"message": "No camera to disconnect."})
+
+
+@app.get("/start_detection")
+async def start_detection():
+    global detecting
     if camera is None:
-        return jsonify({"message": "No Camera, detection cancelled!"})
+        return JSONResponse({"message": "No camera connected!"})
     else:
         detecting = True
-        return jsonify({"message": "Human detection started!"})
+        return JSONResponse({"message": "Detection started!"})
 
-@app.route('/stop_detection')
-def stop_detection():
-    global detecting, camera
+@app.get("/stop_detection")
+async def stop_detection():
+    global detecting
     if camera is None:
-        return jsonify({"message": "No Camera, detection cancelled!"})
+        return JSONResponse({"message": "No camera connected!"})
     else:
         detecting = False
-        return jsonify({"message": "Human detection stopped!"})
+        return JSONResponse({"message": "Detection stopped!"})
 
-@app.route('/disconnect_camera')
-def disconnectCamera():
-    global camera
-    if not camera:
-        return jsonify({"message": "No Camera connected!"})
-    else:
-        camera=None
-        return jsonify({"message": "Camera Disconnected!"})
-    
-@app.route('/detection_status')
-def detection_status():
-    global detected
-    return jsonify({detected:detected})
+@app.get("/detection_status")
+async def detection_status():
+    return JSONResponse({"detected": detected})
 
-@app.route('/video_feed')
-def video_feed():
-    def generate():
+@app.get("/video_feed")
+async def video_feed():
+    async def generate():
         global output_frame
         while True:
             if output_frame is None:
+                await asyncio.sleep(0.01)
                 continue
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + output_frame + b'\r\n')
-    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-if __name__ == "__main__":
-    threading.Timer(1, open_browser).start()
-
-    app.run(host="0.0.0.0", port=5000)
-    
-
+            await asyncio.sleep(0.01)
+    return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")

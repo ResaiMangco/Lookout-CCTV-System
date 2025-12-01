@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lookout CCTV System</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Poppins:wght@500;600&display=swap">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="static/css/main.css">
 </head>
 <body>
     <div class="container">
@@ -13,9 +13,7 @@
             <h2>Live Feed</h2>
             <img id="video-stream" 
                 src="/video_feed" 
-                alt="Camera Feed" 
-                onerror="this.onerror=null; this.src='{{ url_for('static', filename='assets/images/no-image.gif') }}';">
-
+                alt="Camera Feed" >
         </div>
 
         <div class="controls">
@@ -28,7 +26,7 @@
             <button onclick="stopDetection()">Stop Detection</button>
         </div>
     </div>
-    <div class="output-box">
+    <div class="output-box">    
     <textarea id="output" readonly placeholder="System messages will appear here..."></textarea>
     </div>
 
@@ -61,7 +59,7 @@
 
         function disconnectCamera() {
             writeOutput("Disconnecting Camera...")
-            fetch('/stop_detection')
+            fetch('/disconnect_camera')
                 .then(res => res.json())
                 .then(data => writeOutput(data.message));
         }
@@ -70,15 +68,13 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.detected){ writeOutput("Person Detected")}
-                }
+                })
         }
         // Update every 500ms
-        setInterval(updateDetectionStatus, 500);
+        setInterval(updateDetectionStatus, 2000);
 
         function writeOutput(message) {
             const output = document.getElementById('output');   
-
-            
             if (output.value === "") {
                 lines = []
             } else{
