@@ -2,14 +2,14 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from fastapi.templating import Jinja2Templates
+#from fastapi.templating import Jinja2Templates
 import cv2
 from ultralytics import YOLO
 from threading import Thread
 import asyncio
 import threading, webbrowser
 import numpy as np
-
+import uvicorn
 import re
 
 
@@ -71,14 +71,9 @@ def capture_frames():
                 # No camera → show default image
                 output_frame = cv2.imencode(".jpg", default_image)[1].tobytes()
 
-
-# Start thread
 thread = Thread(target=capture_frames)
 thread.daemon = True
 thread.start()
-
-#threading.Timer(1, open_browser).start()
-
 
 def open_browser():
     webbrowser.open_new("http://127.0.0.1:5000")
@@ -163,3 +158,14 @@ async def video_feed():
                    b'Content-Type: image/jpeg\r\n\r\n' + output_frame + b'\r\n')
             await asyncio.sleep(0.01)
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
+
+
+if __name__ == "__main__":
+    
+    threading.Timer(1, open_browser).start()
+    
+    uvicorn.run(
+        "main:app",  # "module:app"
+        host="0.0.0.0",
+        port=5000,
+    )
