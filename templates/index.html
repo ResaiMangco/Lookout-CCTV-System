@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lookout CCTV System</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Poppins:wght@500;600&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="camera-feed">
+            <h2>Live Feed</h2>
+            <img id="video-stream" 
+                src="/video_feed" 
+                alt="Camera Feed" 
+                onerror="this.onerror=null; this.src={{ url_for('static', filename='assets/images/no-image.gif') }}';">
+
+        </div>
+
+        <div class="controls">
+            <h2>Controls</h2>
+            <input type="text" id="camera-url" placeholder="Enter camera URL or device">
+            <button onclick="connectCamera()">Connect</button>
+            <button onclick="startDetection()">Start Detection</button>
+            <button onclick="stopDetection()">Stop Detection</button>
+        </div>
+    </div>
+    <div class="output-box">
+    <textarea id="output" readonly placeholder="System messages will appear here..."></textarea>
+    </div>
+
+
+    
+    <script>
+        function connectCamera() {
+            writeOutput("Button pressed")
+            let  url = document.getElementById('camera-url').value;
+            url = "http://" + url + "/video";
+            fetch(`/connect_camera?url=${encodeURIComponent(url)}`)
+                .then(res => res.json())
+                .then(data => writeOutput(data.message));
+            
+        }
+
+        function startDetection() {
+            fetch('/start_detection')
+                .then(res => res.json())
+                .then(data => alert(data.message));
+            writeOutput("Starting Detection...")
+        }
+
+        function stopDetection() {
+            fetch('/stop_detection')
+                .then(res => res.json())
+                .then(data => alert(data.message));
+            writeOutput("Stop Detection...")
+        }
+        function writeOutput(message) {
+            const output = document.getElementById('output');   
+
+            
+            if (output.value === "") {
+                lines = []
+            } else{
+                lines = output.value.split("\n");
+            }
+
+            // Timestamp
+            const now = new Date();
+            const timestamp = now.toLocaleString();
+
+            // Build new message
+            const full_message = `[${timestamp}] ${message}`;
+
+            // Prepend
+            lines.unshift(full_message);
+
+            if (lines.length > 120) {
+                lines = lines.slice(0, 100);
+            }
+
+
+            output.value = lines.join("\n");
+            output.scrollTop = 0;
+        }
+
+    </script>
+</body>
+
+</html>

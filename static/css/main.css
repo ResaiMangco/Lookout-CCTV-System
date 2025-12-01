@@ -1,0 +1,99 @@
+:root {
+  --primary: #e4953b;
+  --secondary: #e4aa6c;
+  --tertiary: #eacbaa;
+  --accent: #b17636;
+  --background: #fff2e4;
+  --white: #fff8f0;
+  --gray: #444;
+  --text: #2e2e2e;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 20px;
+}
+
+body {
+  font-family: 'Manrope', sans-serif;
+  text-align: justify;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Poppins', serif;
+}
+
+.container {
+    display: flex;
+    height: 90vh;
+}
+
+.camera-feed {
+    flex: 2;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.camera-feed img {
+    max-width: 100%;
+    max-height: 90%;
+    border: 2px solid #fff;
+}
+
+.controls {
+    flex: 1;
+    padding: 20px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.controls input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.controls button {
+    padding: 10px;
+    font-size: 16px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.controls button:hover {
+    background: #45a049;
+}
+
+
+.output-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.output-box textarea {
+    width: 100%;
+    height: 150px;
+    padding: 10px;
+    font-size: 14px;
+    resize: none;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background: #f9f9f9;
+    color: #333;
+    overflow-y: auto;
+}
