@@ -1,7 +1,11 @@
 from flask import Flask, Response, request, jsonify, render_template
 import cv2
 from threading import Thread
+from sympy import false, true
 from ultralytics import YOLO
+import webbrowser
+import threading
+
 
 app = Flask(__name__)
 
@@ -9,15 +13,22 @@ app = Flask(__name__)
 camera = None
 camera_url = None
 detecting = False
+detected = False
 model = YOLO("assets/best.pt")
+signal_counter = 0
+signal_send = 4
 
 output_frame = None
+
+def open_browser():
+    print("Opening Browser")
+    webbrowser.open_new("http://127.0.0.1:5000")
 
 # ---------------------------
 # Video capture thread
 # ---------------------------
 def capture_frames():
-    global camera, output_frame, detecting
+    global camera, output_frame, detecting, detected, signal_counter
     while True:
         if camera is not None:
             ret, frame = camera.read()
@@ -25,14 +36,19 @@ def capture_frames():
                 continue
 
             # Run YOLO detection if enabled
-            if detecting:
-                results = model(frame)
-                for r in results:
-                    for box in r.boxes.xyxy:  # xyxy boxes
-                        x1, y1, x2, y2 = map(int, box)
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        cv2.putText(frame, "Person", (x1, y1-10),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
+            if detecting:                
+                results = model(frame)[0]
+                
+                if len(results.boxes) > 0:
+                    detected = True                        
+                else:
+                    detected = False
+                    
+                for box in results.boxes.xyxy:  # xyxy boxes
+                    x1, y1, x2, y2 = map(int, box)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                    cv2.putText(frame, "Person", (x1, y1-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
 
             # Store frame
             ret, jpeg = cv2.imencode('.jpg', frame)
@@ -62,23 +78,43 @@ def connect_camera():
                 return jsonify({"message": "Camera connected successfully!"})
             else:
                 camera = None
-                return jsonify({"message": "Failed to open camera."})
+                return jsonify({"message": "Failed to open camera!"})
         except Exception as e:
             return jsonify({"message": str(e)})
     else:
-        return jsonify({"message": "Camera already connected."})
+        return jsonify({"message": "Camera already connected!"})
 
 @app.route('/start_detection')
 def start_detection():
-    global detecting
-    detecting = True
-    return jsonify({"message": "Human detection started!"})
+    global detecting, camera
+    if camera is None:
+        return jsonify({"message": "No Camera, detection cancelled!"})
+    else:
+        detecting = True
+        return jsonify({"message": "Human detection started!"})
 
 @app.route('/stop_detection')
 def stop_detection():
-    global detecting
-    detecting = False
-    return jsonify({"message": "Human detection stopped!"})
+    global detecting, camera
+    if camera is None:
+        return jsonify({"message": "No Camera, detection cancelled!"})
+    else:
+        detecting = False
+        return jsonify({"message": "Human detection stopped!"})
+
+@app.route('/disconnect_camera')
+def disconnectCamera():
+    global camera
+    if not camera:
+        return jsonify({"message": "No Camera connected!"})
+    else:
+        camera=None
+        return jsonify({"message": "Camera Disconnected!"})
+    
+@app.route('/detection_status')
+def detection_status():
+    global detected
+    return jsonify({detected:detected})
 
 @app.route('/video_feed')
 def video_feed():
@@ -92,4 +128,8 @@ def video_feed():
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    threading.Timer(1, open_browser).start()
+
+    app.run(host="0.0.0.0", port=5000)
+    
+

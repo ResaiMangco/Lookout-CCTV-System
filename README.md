@@ -17,7 +17,7 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 - Install DroidCam on your phone
 - start streaming, note WIFI IP and Port 
 - Run the backend server main.py
-- Open the webpage, from the url
+- webpage automatically opens after
 - Enter the WIFI IP:Port of the camera
 - Connect to camera and start detecting
 

@@ -14,14 +14,16 @@
             <img id="video-stream" 
                 src="/video_feed" 
                 alt="Camera Feed" 
-                onerror="this.onerror=null; this.src={{ url_for('static', filename='assets/images/no-image.gif') }}';">
+                onerror="this.onerror=null; this.src='{{ url_for('static', filename='assets/images/no-image.gif') }}';">
 
         </div>
 
         <div class="controls">
             <h2>Controls</h2>
-            <input type="text" id="camera-url" placeholder="Enter camera URL or device">
-            <button onclick="connectCamera()">Connect</button>
+            <p>Input: Wifi IP:Port </p>
+            <input type="text" id="camera-url" placeholder="e.g. 1XX.1XX.X.X:4XX7">
+            <button onclick="connectCamera()">Connect Camera</button>
+            <button onclick="disconnectCamera()">Disconnect Camera</button>
             <button onclick="startDetection()">Start Detection</button>
             <button onclick="stopDetection()">Stop Detection</button>
         </div>
@@ -34,7 +36,7 @@
     
     <script>
         function connectCamera() {
-            writeOutput("Button pressed")
+            writeOutput("Connecting Camera...")
             let  url = document.getElementById('camera-url').value;
             url = "http://" + url + "/video";
             fetch(`/connect_camera?url=${encodeURIComponent(url)}`)
@@ -44,18 +46,35 @@
         }
 
         function startDetection() {
+            writeOutput("Starting Detection...")
             fetch('/start_detection')
                 .then(res => res.json())
-                .then(data => alert(data.message));
-            writeOutput("Starting Detection...")
+                .then(data => writeOutput(data.message));
         }
 
         function stopDetection() {
+            writeOutput("Stopping Detection...")
             fetch('/stop_detection')
                 .then(res => res.json())
-                .then(data => alert(data.message));
-            writeOutput("Stop Detection...")
+                .then(data => writeOutput(data.message));
         }
+
+        function disconnectCamera() {
+            writeOutput("Disconnecting Camera...")
+            fetch('/stop_detection')
+                .then(res => res.json())
+                .then(data => writeOutput(data.message));
+        }
+        function updateDetectionStatus() {
+            fetch("/detection_status")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.detected){ writeOutput("Person Detected")}
+                }
+        }
+        // Update every 500ms
+        setInterval(updateDetectionStatus, 500);
+
         function writeOutput(message) {
             const output = document.getElementById('output');   
 
@@ -84,6 +103,7 @@
             output.value = lines.join("\n");
             output.scrollTop = 0;
         }
+        
 
     </script>
 </body>
