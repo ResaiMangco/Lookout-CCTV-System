@@ -26,7 +26,6 @@ Architecture
 - Model: YOLOv11n
 - Layers: 100
 - Parameters: 2,582,347
-- Compute: 
 
 Training Process
 - Training Images: 12,823 (20% of COCO person class training set)
