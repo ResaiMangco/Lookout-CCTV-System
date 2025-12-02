@@ -38,10 +38,10 @@ Training Process
 - Loss Functions: Boxes, Classification, DFL
 
 Evalutation metrics
-- Precision:
-- Recall:
-- mAP@50:
-- mAP@50-95:
+- Precision: 0.777
+- Recall: 0.625
+- mAP@50: 0719
+- mAP@50-95: 0.474
 
 ---
 
@@ -56,4 +56,5 @@ Evalutation metrics
 - Addition of more Cameras
 - ID system for multiple people detected with commands for IDs
 - Synchronous camera detection intersection
+
 
