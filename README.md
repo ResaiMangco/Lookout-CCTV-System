@@ -33,7 +33,7 @@ Training Process
 - Epochs: 60
 - Batch Size: 16
 - Image Size: 640x640
-- Optimizer: AdamW
+- Optimizer: AdamW (default)
 - Loss Functions: Boxes, Classification, DFL
 
 Evalutation metrics
