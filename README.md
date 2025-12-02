@@ -24,9 +24,8 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 ## Model Details
 Architecture
 - Model: YOLOv11n
-- Layers: 100
-- Parameters: 2,582,347
-- Compute: 6.3 GFLOPs
+- Layers: 181
+- Parameters: 2,590,035
 
 Training Process
 - Training Images: 12,823 (20% of COCO person class training set)
@@ -34,7 +33,7 @@ Training Process
 - Epochs: 60
 - Batch Size: 16
 - Image Size: 640x640
-- Optimizer: AdamW
+- Optimizer: AdamW (default)
 - Loss Functions: Boxes, Classification, DFL
 
 Evalutation metrics
