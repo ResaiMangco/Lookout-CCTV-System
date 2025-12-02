@@ -30,7 +30,7 @@ output_frame = None
 frame_count = 0
 skip_frame = 4
 
-model = YOLO("static/assets/best.pt")  # YOLO model
+model = YOLO("static/assets/HumanDetectorModel.pt")  # YOLO model
 
 import threading
 camera_lock = threading.Lock()

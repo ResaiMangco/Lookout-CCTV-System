@@ -26,7 +26,7 @@ Architecture
 - Model: YOLOv11n
 - Layers: 100
 - Parameters: 2,582,347
-- Compute: 6.3 GFLOPs
+- Compute: 
 
 Training Process
 - Training Images: 12,823 (20% of COCO person class training set)
@@ -38,10 +38,10 @@ Training Process
 - Loss Functions: Boxes, Classification, DFL
 
 Evalutation metrics
-- Precision:
-- Recall:
-- mAP@50:
-- mAP@50-95:
+- Precision: 0.777
+- Recall: 0.625
+- mAP@50: 0719
+- mAP@50-95: 0.474
 
 ---
 
