@@ -22,9 +22,26 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 - Connect to camera and start detecting
 
 ## Model Details
+Architecture
+- Model: YOLOv11n
+- Layers: 100
+- Parameters: 2,582,347
+- Compute: 6.3 GFLOPs
 
-- **Model:** YOLOv11n  
-- **Dataset:** COCO (only people class)  
+Training Process
+- Training Images: 12,823 (20% of COCO person class training set)
+- Validation Images: 2,693
+- Epochs: 60
+- Batch Size: 16
+- Image Size: 640x640
+- Optimizer: AdamW
+- Loss Functions: Boxes, Classification, DFL
+
+Evalutation metrics
+- Precision:
+- Recall:
+- mAP@50:
+- mAP@50-95:
 
 ---
 
@@ -36,5 +53,7 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 ---
 
 ## Future Improvements
-
+- Addition of more Cameras
+- ID system for multiple people detected with commands for IDs
+- Synchronous camera detection intersection
 
