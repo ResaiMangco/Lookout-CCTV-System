@@ -21,12 +21,18 @@
             <p>Input: Wifi IP:Port </p>
             <input type="text" id="camera-url" placeholder="e.g. 1XX.1XX.X.X:4XX7">
             <input onclick="connectCamera()" type="button" style="background-color: #4CAF50; color: #FFFF;" 
-            value="Connect Camera" id="camera"></input>
+            value="Connect Camera" id="camera">
 
             <input onclick="startDetection()" type="button" style="background-color: #4CAF50; color: #FFFF;" 
-            value="Start Detection" id="detection"></input>
+            value="Start Detection" id="detection">
+            
+            <input onclick="toggleMute()" type="button" style="background-color: #4CAF50; color: #FFFF;" 
+            value="Mute" id="mute">
+
 
         </div>
+        <audio id="alert" src="/static/assets/audios/alarm.mp3" loop></audio>
+
     </div>
     <div class="output-box">    
     <textarea id="output" readonly placeholder="System messages will appear here..."></textarea>
@@ -35,6 +41,8 @@
 
     
     <script>
+        const audio = document.getElementById("alert");
+        const mute_button = document.getElementById("mute");
         function connectCamera() {
             var elem = document.getElementById("camera")
             if (elem.value == "Connect Camera"){
@@ -51,8 +59,24 @@
                         }
                     });
             }
-            else{
+            else{ //disconnectCamera()
                 writeOutput("Disconnecting Camera...")
+                // Stop detection first if diconnecting camera
+                var detect_btn = document.getElementById("detection")
+                if (detect_btn.value == "Stop Detection") {
+                    writeOutput("Stopping Detection...")
+                    detect_btn.value = "Start Detection";
+                    detect_btn.style = "background-color: #4CAF50; color: #FFFF;";
+                    fetch('/stop_detection')
+                        .then(res => res.json())
+                        .then(data => writeOutput(data.message));
+                }
+                if (alarm_on){
+                    audio.pause();
+                    audio.currentTime = 0;
+                    alarm_on = false;
+                }
+
                 elem.value = "Connect Camera"
                 elem.style = "background-color: #4CAF50; color: #FFFF;";
                 fetch('/disconnect_camera')
@@ -63,8 +87,13 @@
         }
 
         function startDetection() {
-            var elem = document.getElementById("detection")
+            var elem = document.getElementById("detection")          
             if (elem.value == "Start Detection"){
+                // Auto unmute when detecting
+                audio.muted = false
+                mute_button.value = "Mute";
+                mute_button.style.backgroundColor = "#4CAF50"; // green
+                
                 writeOutput("Starting Detection...")
                 fetch('/start_detection')
                     .then(res => res.json())
@@ -76,8 +105,13 @@
                         }
                 });
             }
-            else{
+            else{ // stopDetection()
                 writeOutput("Stopping Detection...")
+                if (alarm_on){
+                    audio.pause();
+                    audio.currentTime = 0;
+                    alarm_on = false;
+                }
                 elem.value = "Start Detection"
                 elem.style = "background-color: #4CAF50; color: #FFFF;";
                 fetch('/stop_detection')
@@ -86,25 +120,48 @@
             }
         }
 
-        function stopDetection() {
-            writeOutput("Stopping Detection...")
-            fetch('/stop_detection')
-                .then(res => res.json())
-                .then(data => writeOutput(data.message));
-        }
-
-        function updateDetectionStatus() {
+        let alarm_on = false
+        function updateDetectionStatus() { 
             fetch("/detection_status")
                 .then(res => res.json())
                 .then(data => {
-                    if (data.detected){ writeOutput("Person Detected")}
+
+                    if (data.detected){ 
+                        writeOutput("Person Detected")
+                        if (!alarm_on) {
+                            audio.volume = 1;
+                            audio.play();
+                            alarm_on = true;
+                            writeOutput("Playing Alarm")
+                        }
+                    } else{
+                        if (alarm_on) {
+                            audio.pause();
+                            audio.currentTime = 0;
+                            alarm_on = false;
+                        }
+                    }
                 })
         }
-        // Update every 500ms
-        setInterval(updateDetectionStatus, 2000);
+        // Update every 3 sec
+        setInterval(updateDetectionStatus, 3000);
+        
+        
+        function toggleMute() {
+            
+            audio.muted = !audio.muted; 
+            if (audio.muted) {
+                mute_button.value = "Unmute";                // change text
+                mute_button.style.backgroundColor = "#a80404"; // red
+            } else {
+                mute_button.value = "Mute";
+                mute_button.style.backgroundColor = "#4CAF50"; // green
+            }
+        }
 
+        
         function writeOutput(message) {
-            const output = document.getElementById('output');   
+            var output = document.getElementById('output');   
             if (output.value === "") {
                 lines = []
             } else{
@@ -120,6 +177,7 @@
 
             // Prepend
             lines.unshift(full_message);
+            sendLogToServer(full_message)
 
             if (lines.length > 120) {
                 lines = lines.slice(0, 100);
@@ -129,7 +187,14 @@
             output.value = lines.join("\n");
             output.scrollTop = 0;
         }
-        
+
+        function sendLogToServer(message) {
+        fetch("/append_log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ line : message })
+        });
+        }
 
     </script>
 </body>
