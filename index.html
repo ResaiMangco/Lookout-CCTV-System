@@ -20,10 +20,12 @@
             <h2>Controls</h2>
             <p>Input: Wifi IP:Port </p>
             <input type="text" id="camera-url" placeholder="e.g. 1XX.1XX.X.X:4XX7">
-            <button onclick="connectCamera()">Connect Camera</button>
-            <button onclick="disconnectCamera()">Disconnect Camera</button>
-            <button onclick="startDetection()">Start Detection</button>
-            <button onclick="stopDetection()">Stop Detection</button>
+            <input onclick="connectCamera()" type="button" style="background-color: #4CAF50; color: #FFFF;" 
+            value="Connect Camera" id="camera"></input>
+
+            <input onclick="startDetection()" type="button" style="background-color: #4CAF50; color: #FFFF;" 
+            value="Start Detection" id="detection"></input>
+
         </div>
     </div>
     <div class="output-box">    
@@ -34,20 +36,54 @@
     
     <script>
         function connectCamera() {
-            writeOutput("Connecting Camera...")
-            let  url = document.getElementById('camera-url').value;
-            url = "http://" + url + "/video";
-            fetch(`/connect_camera?url=${encodeURIComponent(url)}`)
+            var elem = document.getElementById("camera")
+            if (elem.value == "Connect Camera"){
+                writeOutput("Connecting Camera...")
+                let  url = document.getElementById('camera-url').value;
+                url = "http://" + url + "/video";
+                fetch(`/connect_camera?url=${encodeURIComponent(url)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        writeOutput(data.message)
+                        if (data.message != "Invalid camera URL!"){
+                            elem.value = "Disconnect Camera";
+                            elem.style = "background-color: #a80404; color: #FFFF;";
+                        }
+                    });
+            }
+            else{
+                writeOutput("Disconnecting Camera...")
+                elem.value = "Connect Camera"
+                elem.style = "background-color: #4CAF50; color: #FFFF;";
+                fetch('/disconnect_camera')
                 .then(res => res.json())
                 .then(data => writeOutput(data.message));
+            }
             
         }
 
         function startDetection() {
-            writeOutput("Starting Detection...")
-            fetch('/start_detection')
+            var elem = document.getElementById("detection")
+            if (elem.value == "Start Detection"){
+                writeOutput("Starting Detection...")
+                fetch('/start_detection')
+                    .then(res => res.json())
+                    .then(data => {
+                        writeOutput(data.message)
+                        if (data.message != "No camera connected!"){
+                                elem.value = "Stop Detection";
+                                elem.style = "background-color: #a80404; color: #FFFF;";
+                        }
+                });
+            }
+            else{
+                writeOutput("Stopping Detection...")
+                elem.value = "Start Detection"
+                elem.style = "background-color: #4CAF50; color: #FFFF;";
+                fetch('/stop_detection')
                 .then(res => res.json())
                 .then(data => writeOutput(data.message));
+            }
         }
 
         function stopDetection() {
@@ -57,12 +93,6 @@
                 .then(data => writeOutput(data.message));
         }
 
-        function disconnectCamera() {
-            writeOutput("Disconnecting Camera...")
-            fetch('/disconnect_camera')
-                .then(res => res.json())
-                .then(data => writeOutput(data.message));
-        }
         function updateDetectionStatus() {
             fetch("/detection_status")
                 .then(res => res.json())
