@@ -6,9 +6,10 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 
 ## Instalation
 - Clone the repository
-- Download the trained YOLO model in releases
-- Place YOLO model in assets
 - Install Dependencies in requirement.txt
+
+- Note: If the YOLO model is corrupted, it may be downloaded from releases
+- Place downloaded model in assets
 
 
 ---
@@ -55,5 +56,6 @@ Evalutation metrics
 - Addition of more Cameras
 - ID system for multiple people detected with commands for IDs
 - Synchronous camera detection intersection
+
 
 
