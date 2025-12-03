@@ -4,7 +4,7 @@ A CCTV system to detect humans entering restricted zones. Uses a Yolov11n model 
 
 ---
 
-## Instalation
+## Installation
 - Clone the repository
 - Install Dependencies in requirement.txt
 
@@ -57,6 +57,7 @@ Evalutation metrics
 - Addition of more Cameras
 - ID system for multiple people detected with commands for IDs
 - Synchronous camera detection intersection
+
 
 
 
