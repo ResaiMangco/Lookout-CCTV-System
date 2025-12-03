@@ -28,7 +28,6 @@ camera_url = None
 detecting = False
 detected = False
 output_frame = None
-detected_bool = False
 frame_count = 0
 skip_frame = 4
 
@@ -41,7 +40,7 @@ camera_lock = threading.Lock()
 # Video capture thread
 # ---------------------------
 def capture_frames():
-    global camera, output_frame, detecting, detected, frame_count, detected_bool
+    global camera, output_frame, detecting, detected, frame_count
     default_image = cv2.imread("static/assets/images/no-image.jpg")
     default_image = cv2.resize(default_image, (640, 480))
 
@@ -71,7 +70,6 @@ def capture_frames():
 
                             detected = len(results.boxes) > 0
                             if detected:
-                                detected_bool = True
                                 frames_since_detected = 0
                             else:
                                 frames_since_detected += 1
@@ -132,7 +130,6 @@ def open_browser():
 
 def validate_camera_url(url: str) -> bool:
     pattern = r'^(http|rtsp)://\d{1,3}(\.\d{1,3}){3}(:\d+)?(/.*)?$'
-    print("Check url")
     return re.match(pattern, url) is not None
 
 # ---------------------------
@@ -200,7 +197,8 @@ async def stop_detection():
 
 @app.get("/detection_status")
 async def detection_status():
-    return JSONResponse({"detected": detected})
+    if detecting:
+        return JSONResponse({"detected": detected})
 
 @app.get("/video_feed")
 async def video_feed():
@@ -215,6 +213,16 @@ async def video_feed():
             await asyncio.sleep(0.033)
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace; boundary=frame")
 
+LOG_FILE = "logs/logs.txt"  # write to this file
+
+@app.post("/append_log")
+async def append_log(data: dict):
+    message = data.get("line", "")
+    if message:
+        # Append as new line (bottom)
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(message + "\n")
+    return ""
 
 if __name__ == "__main__":
     
