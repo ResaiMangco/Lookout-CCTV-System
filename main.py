@@ -28,6 +28,7 @@ camera_url = None
 detecting = False
 detected = False
 output_frame = None
+detected_bool = False
 frame_count = 0
 skip_frame = 4
 
@@ -40,12 +41,13 @@ camera_lock = threading.Lock()
 # Video capture thread
 # ---------------------------
 def capture_frames():
-    global camera, output_frame, detecting, detected, frame_count
+    global camera, output_frame, detecting, detected, frame_count, detected_bool
     default_image = cv2.imread("static/assets/images/no-image.jpg")
     default_image = cv2.resize(default_image, (640, 480))
 
     last_boxes = []
     color = 255
+    frames_since_detected = 0
 
     while True:
         with camera_lock:
@@ -68,6 +70,12 @@ def capture_frames():
                             results = model(resized)[0]
 
                             detected = len(results.boxes) > 0
+                            if detected:
+                                detected_bool = True
+                                frames_since_detected = 0
+                            else:
+                                frames_since_detected += 1
+
 
                             scaled_x = orig_w / 640
                             scaled_y = orig_h / 480
@@ -86,10 +94,22 @@ def capture_frames():
                         
                         for box in last_boxes:
                             x1, y1, x2, y2 = map(int, box)
-                            cv2.rectangle(frame, (x1, y1), (x2, y2), (color, 0, 0), 2)
+                            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, color), 2)
                             cv2.rectangle(frame, (x1, y1), (x1+100, y1-30), (0,0,0), -1)
                             cv2.putText(frame, "Person", (x1, y1-10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,255,255), 2)
+                        
+
+                            
+                        if detected:
+                            cv2.rectangle(frame, (10, 10), (250, 50), (0,0,170), -1)
+                            cv2.putText(frame, "Person Detected", (20, 38),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+                        
+                        if frames_since_detected >= 30:
+                            cv2.rectangle(frame, (10, 10), (300, 50), (0,170,0), -1)
+                            cv2.putText(frame, "No People Detected", (20, 38),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
 
                     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
                     output_frame = cv2.imencode(".jpg", frame, encode_param)[1].tobytes()
@@ -170,10 +190,12 @@ async def start_detection():
 @app.get("/stop_detection")
 async def stop_detection():
     global detecting
+    global detected
     if camera is None:
         return JSONResponse({"message": "No camera connected!"})
     else:
         detecting = False
+        detected = False
         return JSONResponse({"message": "Detection stopped!"})
 
 @app.get("/detection_status")
