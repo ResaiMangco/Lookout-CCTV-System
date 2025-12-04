@@ -55,8 +55,10 @@ Evalutation metrics
 
 ## Future Improvements
 - Addition of more Cameras
+- Use of actual cameras for CCTV
 - ID system for multiple people detected with commands for IDs
-- Synchronous camera detection intersection
+- Synchronous camera detection for areas of intersection
+
 
 
 
