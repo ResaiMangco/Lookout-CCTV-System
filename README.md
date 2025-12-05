@@ -23,6 +23,8 @@ Note:
 - Enter the WIFI IP:Port of the camera
 - Connect to camera and start detecting
 
+Note: Camera and Server connected to the same WIFI
+
 ## Model Details
 Architecture
 - Model: YOLOv11n
@@ -58,6 +60,7 @@ Evalutation metrics
 - Use of actual cameras for CCTV
 - ID system for multiple people detected with commands for IDs
 - Synchronous camera detection for areas of intersection
+
 
 
 
